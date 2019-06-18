@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -7,16 +7,13 @@ namespace Krabenian
 {
     public partial class Barcode128
     {
-
-        private readonly string barcode = "";
-        private readonly int width = 0;
         private readonly bool[] tags;
         private int pivot = 0;
 
         public Barcode128(string barcodeString)
         {
             int barcodeDigi = barcodeString.Length / 2;
-            width = 46 + (barcodeDigi * 11);
+            int width = 46 + (barcodeDigi * 11);
             if (barcodeString.Length % 2 == 1) width += 22;
             tags = new bool[width];
             int sum = 207;
@@ -47,7 +44,6 @@ namespace Krabenian
                 PushChar(parse);
                 sum += parse * (multiply + 1);
             }
-
             PushChar(sum % 103); //Checksum
             PushChar(106); // Stop
         }
@@ -199,8 +195,8 @@ namespace Krabenian
                 case 95: PushPattern(1, 1, 4, 1, 1, 3); break;
                 case 96: PushPattern(1, 1, 4, 3, 1, 1); break;
                 case 97: PushPattern(4, 1, 1, 1, 1, 3); break;
-                case 98: PushPattern(1, 1, 3, 1, 4, 1); break;
-                case 99: PushPattern(4, 1, 1, 1, 3, 1); break;
+                case 98: PushPattern(4, 1, 1, 3, 1, 1); break;
+                case 99: PushPattern(1, 1, 3, 1, 4, 1); break;
 
                 case 100: PushPattern(1, 1, 4, 1, 3, 1); break;
                 case 101: PushPattern(3, 1, 1, 1, 4, 1); break;
@@ -214,5 +210,3 @@ namespace Krabenian
         }
     }
 }
-
-
