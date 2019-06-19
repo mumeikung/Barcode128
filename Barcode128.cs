@@ -5,12 +5,12 @@ using System.IO;
 
 namespace Krabenian
 {
-    public partial class Barcode128
+    public partial class Barcode_GS1_128
     {
         private readonly bool[] tags;
         private int pivot = 0;
 
-        public Barcode128(string barcodeString)
+        public Barcode_GS1_128(string barcodeString)
         {
             int barcodeDigi = barcodeString.Length / 2;
             int width = 46 + (barcodeDigi * 11);
@@ -28,7 +28,7 @@ namespace Krabenian
                 else
                 {
                     temp += barcodeString[i];
-                    int parse = int.Parse(temp);
+                    if (!int.TryParse(temp, out int parse)) throw new Exception("0-9 Only");
                     temp = "";
                     sum += parse * multiply;
                     PushChar(parse);
@@ -44,44 +44,39 @@ namespace Krabenian
                 PushChar(parse);
                 sum += parse * (multiply + 1);
             }
+
             PushChar(sum % 103); //Checksum
             PushChar(106); // Stop
         }
 
-        public string ToBase64(int height)
+        public Bitmap ToBitMap(int dotHeight, int pixelPerDot)
         {
-            Bitmap bmp = new Bitmap(pivot, height);
-
+            if (pixelPerDot < 1) throw new Exception("Pixel per dot < 1");
+            int height = dotHeight * pixelPerDot;
+            Bitmap bmp = new Bitmap(pivot * pixelPerDot, height);
             for (int x = 0; x < pivot; x++)
             {
                 int color = tags[x] ? 255 : 0;
                 for (int y = 0; y < height; y++)
-                    bmp.SetPixel(x, y, Color.FromArgb(255, color, color, color));
+                {
+                    for (int p = 0; p < pixelPerDot; p++)
+                        bmp.SetPixel((x * pixelPerDot) + p, y, Color.FromArgb(255, color, color, color));
+                }
             }
+            return bmp;
+        }
 
+        public string ToBase64PNG(int dotHeight, int pixelPerDot)
+        {
+            Bitmap bmp = ToBitMap(dotHeight, pixelPerDot);
             var stream = new MemoryStream();
             bmp.Save(stream, ImageFormat.Png);
             return Convert.ToBase64String(stream.ToArray());
         }
 
-        private void PushPixel(bool isWhite, int pixel)
+        public string ToDataUriPNG(int dotHeight, int pixelPerDot)
         {
-            for (int i = 0; i < pixel; i++)
-            {
-                tags[pivot] = isWhite;
-                pivot++;
-            }
-        }
-
-        private void PushPattern(int b1, int s1, int b2, int s2, int b3, int s3, int b5 = 0)
-        {
-            PushPixel(false, b1);
-            PushPixel(true, s1);
-            PushPixel(false, b2);
-            PushPixel(true, s2);
-            PushPixel(false, b3);
-            PushPixel(true, s3);
-            PushPixel(false, b5);
+            return "data:image/png;base64," + ToBase64PNG(dotHeight, pixelPerDot);
         }
 
         private void PushChar(int charCode)
@@ -207,6 +202,22 @@ namespace Krabenian
                 case 106: PushPattern(2, 3, 3, 1, 1, 1, 2); break;
                 default: break;
             }
+        }
+
+        private void PushPattern(int b1, int s1, int b2, int s2, int b3, int s3, int b5 = 0)
+        {
+            PushDot(false, b1);
+            PushDot(true, s1);
+            PushDot(false, b2);
+            PushDot(true, s2);
+            PushDot(false, b3);
+            PushDot(true, s3);
+            PushDot(false, b5);
+        }
+
+        private void PushDot(bool isWhite, int dot)
+        {
+            for (int i = 0; i < dot; i++) tags[pivot++] = isWhite;
         }
     }
 }
